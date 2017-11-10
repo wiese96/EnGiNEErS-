@@ -1,0 +1,64 @@
+/*
+ * colorSensor.c
+ *
+ * Created: 10/31/2017 2:04:00 PM
+ * Author : CIT-Labs
+ */ 
+
+#define F_CPU 16000000UL
+#include <util/delay.h>
+#include <avr/io.h>
+#include "serial.h"
+#include <avr/interrupt.h>
+
+int period = 0;
+unsigned int k;
+unsigned int t;
+
+void initColor()
+{
+	DDRD &= 0b00000100;
+	PCICR |= 0b00000100;
+	PCMSK2 |= 0b00000100;
+	//EICRA = 0b00000001;
+	//EIMSK = 0b00000001;
+	TCCR1A |= 0x00;
+	TCCR1B |= 0b00000001;
+}
+
+ISR(PCINT2_vect){
+	t = TCNT1/16;
+	TCNT1 = 0x00;
+}
+
+int getColor()
+{
+	sei();
+	_delay_ms(500);
+	cli();
+	k = t*2;
+	return k;
+}
+
+int main(void)
+{
+	DDRB |= 0xFF;
+	init_uart();
+	initColor();
+	
+    /* Replace with your application code */
+    while (1) 
+    {
+		period = getColor();
+		printf("Period: %u [micro-sec] \r\n", (uint16_t)period);
+	if(period>=230 & period <= 270)
+		{
+			DDRB &= 0b11011111;
+		}
+		else
+		{
+			DDRB |= 0b00100000;
+		}
+		_delay_ms(1500);
+}
+}
